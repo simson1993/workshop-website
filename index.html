@@ -46,8 +46,87 @@
 
     .site-header {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
       margin-bottom: clamp(3rem, 10vw, 7rem);
+    }
+
+    /* Apple-style frosted glass */
+    .lang-toggle {
+      position: relative;
+      display: inline-flex;
+      flex-shrink: 0;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      box-shadow:
+        0 1px 1px rgba(255, 255, 255, 0.55) inset,
+        0 8px 32px rgba(213, 40, 46, 0.08);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    .lang-toggle__indicator {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: calc(50% - 3px);
+      height: calc(100% - 6px);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: 0 1px 3px rgba(213, 40, 46, 0.12);
+      transition: transform 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .lang-toggle[data-lang="en"] .lang-toggle__indicator {
+      transform: translateX(100%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .lang-toggle__indicator {
+        transition: none;
+      }
+    }
+
+    .lang-toggle__btn {
+      position: relative;
+      z-index: 1;
+      flex: 1 1 50%;
+      min-width: 2.75rem;
+      padding: 0.4rem 0.65rem;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .lang-toggle__btn:hover {
+      color: var(--text-hover);
+    }
+
+    .lang-toggle__btn:focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+    }
+
+    .lang-toggle__btn[aria-pressed="false"] {
+      opacity: 0.72;
+    }
+
+    .lang-toggle__btn[aria-pressed="true"] {
+      opacity: 1;
     }
 
     .header-email {
@@ -115,25 +194,109 @@
       outline: 2px solid var(--text);
       outline-offset: 3px;
     }
+
+    .cta-sep {
+      user-select: none;
+      opacity: 0.55;
+    }
   </style>
 </head>
 <body>
   <header class="site-header">
+    <div
+      class="lang-toggle"
+      id="lang-toggle"
+      data-lang="de"
+      role="group"
+      aria-label="Sprache"
+    >
+      <span class="lang-toggle__indicator" aria-hidden="true"></span>
+      <button type="button" class="lang-toggle__btn" data-set-lang="de" id="lang-de" aria-pressed="true">DE</button>
+      <button type="button" class="lang-toggle__btn" data-set-lang="en" id="lang-en" aria-pressed="false">EN</button>
+    </div>
     <a class="header-email" href="mailto:kontakt@example.com">kontakt@example.com</a>
   </header>
   <main>
     <h1 class="headline">
       <span class="line">Simon Lodemann</span>
-      <span class="line">Art Director</span>
+      <span class="line" data-i18n="role">Art Director</span>
     </h1>
     <div class="intro">
-      <p>
+      <p data-i18n="intro1">
         Ich entwickle visuelle Identitäten, die Marken greifbar machen — von der ersten Idee bis zur konsequenten Umsetzung über alle Berührungspunkte. Dabei verbinde ich gestalterische Klarheit mit Neugier: gemeinsam mit Teams und Kund:innen schaffe ich Bildwelten, die bleiben und verbinden.
       </p>
       <p>
-        <span>Ein Projekt im Kopf? </span><a class="cta-link" href="mailto:kontakt@example.com">Lassen Sie uns sprechen.</a>
+        <span data-i18n="intro2prefix">Ein Projekt im Kopf? </span>
+        <span class="cta-group">
+          <a class="cta-link" href="mailto:kontakt@example.com" data-i18n="cta1">Lassen Sie uns sprechen.</a>
+          <span class="cta-sep" aria-hidden="true"> · </span>
+          <a class="cta-link" href="tetris.html" data-i18n="cta2">Let's play</a>
+        </span>
       </p>
     </div>
   </main>
+  <script>
+    (function () {
+      var STORAGE_KEY = "simonlodemann-lang";
+      var STRINGS = {
+        de: {
+          role: "Art Director",
+          intro1:
+            "Ich entwickle visuelle Identitäten, die Marken greifbar machen — von der ersten Idee bis zur konsequenten Umsetzung über alle Berührungspunkte. Dabei verbinde ich gestalterische Klarheit mit Neugier: gemeinsam mit Teams und Kund:innen schaffe ich Bildwelten, die bleiben und verbinden.",
+          intro2prefix: "Ein Projekt im Kopf? ",
+          cta1: "Lassen Sie uns sprechen.",
+          cta2: "Let's play",
+          ariaLang: "Sprache",
+        },
+        en: {
+          role: "Art Director",
+          intro1:
+            "I develop visual identities that make brands tangible — from the first idea through consistent implementation across every touchpoint. I combine design clarity with curiosity: together with teams and clients, I build visual worlds that last and connect.",
+          intro2prefix: "A project in mind? ",
+          cta1: "Let's talk.",
+          cta2: "Let's play",
+          ariaLang: "Language",
+        },
+      };
+
+      function getPreferredLang() {
+        try {
+          var stored = localStorage.getItem(STORAGE_KEY);
+          if (stored === "de" || stored === "en") return stored;
+        } catch (e) {}
+        var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+        return /^en/i.test(nav) ? "en" : "de";
+      }
+
+      function applyLang(lang) {
+        var bundle = STRINGS[lang];
+        if (!bundle) return;
+        document.documentElement.lang = lang;
+        var toggle = document.getElementById("lang-toggle");
+        if (toggle) {
+          toggle.setAttribute("data-lang", lang);
+          toggle.setAttribute("aria-label", bundle.ariaLang);
+        }
+        document.getElementById("lang-de").setAttribute("aria-pressed", lang === "de" ? "true" : "false");
+        document.getElementById("lang-en").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
+        document.querySelectorAll("[data-i18n]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n");
+          if (key && bundle[key] != null) el.textContent = bundle[key];
+        });
+        try {
+          localStorage.setItem(STORAGE_KEY, lang);
+        } catch (e) {}
+      }
+
+      document.getElementById("lang-de").addEventListener("click", function () {
+        applyLang("de");
+      });
+      document.getElementById("lang-en").addEventListener("click", function () {
+        applyLang("en");
+      });
+
+      applyLang(getPreferredLang());
+    })();
+  </script>
 </body>
 </html>
